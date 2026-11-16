@@ -59,81 +59,172 @@
 
 ## **Entidades e Atributos Principais:**
 
-* **Unidade:** id (PK), nome, endereco  
-* **Produto:** id (PK), nome, descricao, preco  
-* **Estoque:** id (PK), unidadeId (FK), produtoId (FK), quantidadeDisponivel  
-* **Cliente (Usuário):** id (PK), nome, email, senhaHash, perfil (Role: ADMIN, GERENTE, CLIENTE, ATENDENTE), pontosFidelidade  
-* **Pedido:** id (PK), clienteId (FK), unidadeId (FK), canalPedido (Enum: APP, TOTEM, BALCAO, PICKUP, WEB), status (Enum: AGUARDANDO\_PAGAMENTO, PREPARACAO, PRONTO, ENTREGUE, CANCELADO), valorTotal, dataCriacao  
-* **ItemPedido:** id (PK), pedidoId (FK), produtoId (FK), quantidade, precoUnitario  
-* **Pagamento (Mock):** id (PK), pedidoId (FK), statusTransacao, metodoPagamento
+* **Unidade:** id (PK), nome, endereco, ativa, dataCriacao
+* **Produto:** id (PK), nome, descricao, precoBase, ativo, dataCriacao
+* **Estoque:** id (PK), unidadeId (FK), produtoId (FK), quantidadeDisponivel, dataAtualizacao
+* **Usuario:** id (PK), nome, email, senhaHash, perfil (Role: ADMIN, GERENTE, ATENDENTE, COZINHA, CLIENTE), pontosFidelidade, consentimentoLgpd, dataCriacao, dataAtualizacao
+* **Pedido:** id (PK), clienteId (FK, Nullable), unidadeId (FK), canalPedido (Enum: APP, TOTEM, BALCAO, PICKUP, WEB), status (Enum: AGUARDANDO_PAGAMENTO, PREPARACAO, PRONTO, ENTREGUE, CANCELADO), valorTotal, dataCriacao, dataAtualizacao
+* **ItemPedido:** id (PK), pedidoId (FK), produtoId (FK), quantidade, precoUnitarioGarantido
+* **Pagamento (Mock):** id (PK), pedidoId (FK), statusTransacao (Enum: PENDENTE, APROVADO, RECUSADO), metodoPagamento (Enum: CARTAO_CREDITO, CARTAO_DEBITO, PIX, DINHEIRO), chaveIdempotencia, payloadResposta, dataTransacao
+* **AuditoriaLog:** id (PK), usuarioId (FK, Nullable), ator, acao, entidade, entidadeId, detalhes, timestamp
 
 ## **Relacionamentos e Cardinalidades:**
 
-* Uma **Unidade** possui muitos **Produtos** em seu **Estoque** (1:N) e recebe muitos **Pedidos** (1:N).  
-* Um **Cliente** pode realizar muitos **Pedidos** (1:N).  
-* Um **Pedido** é composto por um ou mais **Itens de Pedido** (1:N).  
-* Cada **ItemPedido** está diretamente associado a um único **Produto** (N:1).  
+* Uma **Unidade** possui muitos **Produtos** em seu **Estoque** (1:N) e recebe muitos **Pedidos** (1:N).
+* Um **Usuario** pode realizar muitos **Pedidos** (1:N) ou atuar como operador/auditor.
+* Um **Pedido** é composto por um ou mais **Itens de Pedido** (1:N).
+* Cada **ItemPedido** está diretamente associado a um único **Produto** (N:1).
 * Um **Pedido** possui uma transação de **Pagamento** associada (1:1).
+* Operações críticas geram registros em **AuditoriaLog** (1:N).
 
 # **5\. Modelagem do Banco de Dados (DER)**
 
-## **1\. Clientes (Usuários)**
+## **1\. usuarios**
 
-* `id`: INT (PK)  
-* `nome`: VARCHAR (Not Null)  
-* `email`: VARCHAR (Unique, Not Null)  
-* `senhaHash`: VARCHAR (Not Null)  
-* `perfil`: ENUM ('ADMIN', 'GERENTE', 'CLIENTE', 'ATENDENTE') (Not Null)  
-* `pontosFidelidade`: INT (Default 0\)  
-* `consentimentoLgpd`: BOOLEAN (Not Null)
+* `id`: BIGINT AUTO_INCREMENT (PK)
+* `nome`: VARCHAR(150) (Not Null)
+* `email`: VARCHAR(150) (Unique, Not Null)
+* `senha_hash`: VARCHAR(255) (Not Null)
+* `perfil`: ENUM ('ADMIN', 'GERENTE', 'ATENDENTE', 'COZINHA', 'CLIENTE') (Not Null)
+* `pontos_fidelidade`: INT (Default 0, Not Null)
+* `consentimento_lgpd`: BOOLEAN (Default False, Not Null)
+* `data_criacao`: TIMESTAMP (Default CURRENT_TIMESTAMP, Not Null)
+* `data_atualizacao`: TIMESTAMP (On Update CURRENT_TIMESTAMP, Nullable)
 
-## **2\. Unidades**
+## **2\. unidades**
 
-* `id`: INT (PK)  
-* `nome`: VARCHAR (Not Null)  
-* `endereco`: VARCHAR (Not Null)  
-* `ativa`: BOOLEAN (Default True)
+* `id`: BIGINT AUTO_INCREMENT (PK)
+* `nome`: VARCHAR(150) (Not Null)
+* `endereco`: VARCHAR(255) (Not Null)
+* `ativa`: BOOLEAN (Default True, Not Null)
+* `data_criacao`: TIMESTAMP (Default CURRENT_TIMESTAMP, Not Null)
 
-## **3\. Produtos (Cardápio)**
+## **3\. produtos**
 
-* `id`: INT (PK)  
-* `nome`: VARCHAR (Not Null)  
-* `descricao`: TEXT  
-* `precoBase`: DECIMAL (Not Null)  
-* `ativo`: BOOLEAN (Default True)
+* `id`: BIGINT AUTO_INCREMENT (PK)
+* `nome`: VARCHAR(150) (Not Null)
+* `descricao`: TEXT (Nullable)
+* `preco_base`: DECIMAL(10,2) (Not Null)
+* `ativo`: BOOLEAN (Default True, Not Null)
+* `data_criacao`: TIMESTAMP (Default CURRENT_TIMESTAMP, Not Null)
 
-## **4\. Estoque (Por Unidade)**
+## **4\. estoque**
 
-* `id`: INT (PK)  
-* `unidade_id`: INT (FK)  
-* `produto_id`: INT (FK)  
-* `quantidadeDisponivel`: INT (Not Null)
+* `id`: BIGINT AUTO_INCREMENT (PK)
+* `unidade_id`: BIGINT (FK -> unidades.id, Not Null)
+* `produto_id`: BIGINT (FK -> produtos.id, Not Null)
+* `quantidade_disponivel`: INT (Default 0, Not Null)
+* `data_atualizacao`: TIMESTAMP (Default CURRENT_TIMESTAMP On Update CURRENT_TIMESTAMP, Not Null)
+* *Constraint Unique:* `uk_estoque_unidade_produto` (`unidade_id`, `produto_id`)
+* *Constraint Check:* `chk_estoque_qtd_positiva` (`quantidade_disponivel` >= 0)
 
-## **5\. Pedidos**
+## **5\. pedidos**
 
-* `id`: INT (PK)  
-* `cliente_id`: INT (FK, Nullable)  
-* `unidade_id`: INT (FK, Not Null)  
-* `canalPedido`: ENUM ('APP', 'TOTEM', 'BALCAO', 'PICKUP', 'WEB') (Not Null)  
-* `status`: ENUM ('AGUARDANDO\_PAGAMENTO', 'PREPARACAO', 'PRONTO', 'ENTREGUE', 'CANCELADO') (Not Null)  
-* `valorTotal`: DECIMAL (Not Null)  
-* `dataCriacao`: TIMESTAMP (Default CURRENT\_TIMESTAMP)
+* `id`: BIGINT AUTO_INCREMENT (PK)
+* `cliente_id`: BIGINT (FK -> usuarios.id, Nullable)
+* `unidade_id`: BIGINT (FK -> unidades.id, Not Null)
+* `canal_pedido`: ENUM ('APP', 'TOTEM', 'BALCAO', 'PICKUP', 'WEB') (Not Null)
+* `status`: ENUM ('AGUARDANDO_PAGAMENTO', 'PREPARACAO', 'PRONTO', 'ENTREGUE', 'CANCELADO') (Default 'AGUARDANDO_PAGAMENTO', Not Null)
+* `valor_total`: DECIMAL(10,2) (Not Null)
+* `data_criacao`: TIMESTAMP (Default CURRENT_TIMESTAMP, Not Null)
+* `data_atualizacao`: TIMESTAMP (On Update CURRENT_TIMESTAMP, Nullable)
 
-## **6\. ItensPedido (Itens dos pedidos)**
+## **6\. itens_pedido**
 
-* `id`: INT (PK)  
-* `pedido_id`: INT (FK, Not Null)  
-* `produto_id`: INT (FK, Not Null)  
-* `quantidade`: INT (Not Null)  
-* `precoUnitarioGarantido`: DECIMAL (Not Null)
+* `id`: BIGINT AUTO_INCREMENT (PK)
+* `pedido_id`: BIGINT (FK -> pedidos.id, Not Null)
+* `produto_id`: BIGINT (FK -> produtos.id, Not Null)
+* `quantidade`: INT (Not Null)
+* `preco_unitario_garantido`: DECIMAL(10,2) (Not Null)
+* *Constraint Check:* `chk_itens_qtd_positiva` (`quantidade` > 0)
+
+## **7\. pagamentos**
+
+* `id`: BIGINT AUTO_INCREMENT (PK)
+* `pedido_id`: BIGINT (FK -> pedidos.id, Unique, Not Null)
+* `status_transacao`: ENUM ('PENDENTE', 'APROVADO', 'RECUSADO') (Not Null)
+* `metodo_pagamento`: ENUM ('CARTAO_CREDITO', 'CARTAO_DEBITO', 'PIX', 'DINHEIRO') (Not Null)
+* `chave_idempotencia`: VARCHAR(100) (Unique, Not Null)
+* `payload_resposta`: JSON / TEXT (Nullable)
+* `data_transacao`: TIMESTAMP (Default CURRENT_TIMESTAMP, Not Null)
+
+## **8\. auditoria_logs**
+
+* `id`: BIGINT AUTO_INCREMENT (PK)
+* `usuario_id`: BIGINT (FK -> usuarios.id, Nullable)
+* `ator`: VARCHAR(150) (Not Null)
+* `acao`: VARCHAR(100) (Not Null)
+* `entidade`: VARCHAR(100) (Not Null)
+* `entidade_id`: BIGINT (Not Null)
+* `detalhes`: TEXT (Nullable)
+* `timestamp`: TIMESTAMP (Default CURRENT_TIMESTAMP, Not Null)
 
 ## **Restrições de Integridade (Constraints)**
 
-* **Chaves Primárias (PK):** O campo `id` de cada tabela garante a identificação única.  
-* **Chaves Estrangeiras (FK):** Impedem a criação de relacionamentos órfãos. Exclusões devem ser protegidas (`ON DELETE RESTRICT`).  
-* **Domínio (ENUMs):** Restringir o campo `canalPedido` e o `status` do pedido ao ciclo de vida definido.  
-* **Restrição de Unicidade (Unique):** Em `Clientes` (`email` único) e em `Estoque` (combinação `unidade_id, produto_id` única).  
-* **Restrição de Verificação (Check):** A coluna `quantidadeDisponivel` em `Estoque` (`>= 0`) e `quantidade` em `ItensPedido` (`> 0`).
+* **Chaves Primárias (PK):** O campo `id` de cada tabela garante a identificação única e sequencial.
+* **Chaves Estrangeiras (FK):** Impedem a criação de relacionamentos órfãos (`ON DELETE RESTRICT`).
+* **Domínio (ENUMs):** Restringir o campo `canal_pedido`, `status`, `perfil`, `status_transacao` e `metodo_pagamento` ao ciclo de vida e roles definidos.
+* **Restrição de Unicidade (Unique):** Em `usuarios` (`email` único), `estoque` (combinação `unidade_id, produto_id` única) e `pagamentos` (`chave_idempotencia` única).
+* **Restrição de Verificação (Check):** A coluna `quantidade_disponivel` em `estoque` (`>= 0`) e `quantidade` em `itens_pedido` (`> 0`).
+
+# **6\. Contratos de API e Padrão de Comunicação**
+
+## **Padrões RESTful e URLs:**
+* Recursos no plural em minúsculo: `/auth`, `/unidades`, `/produtos`, `/estoque`, `/pedidos`, `/pagamentos`.
+* Paginação uniforme via Query Params: `?page=0&limit=10`.
+* Resposta paginada padrão com metadata:
+```json
+{
+  "content": [ ... ],
+  "page": 0,
+  "limit": 10,
+  "totalElements": 25,
+  "totalPages": 3
+}
+```
+
+## **Status Codes HTTP Utilizados:**
+* `200 OK`: Sucesso em consultas (GET) ou atualizações (PATCH/PUT).
+* `201 Created`: Criação com sucesso de entidades (POST).
+* `204 No Content`: Operação executada sem conteúdo de retorno.
+* `400 Bad Request`: Formato de requisição inválido ou parâmetros ausentes.
+* `401 Unauthorized`: Token JWT ausente, expirado ou inválido.
+* `403 Forbidden`: Perfil do usuário autenticado sem autorização para a rota.
+* `404 Not Found`: Recurso não localizado (ex: id inexistente).
+* `409 Conflict`: Conflito de regra de negócio (ex: estoque insuficiente, duplicidade de idempotência).
+* `422 Unprocessable Entity`: Erro de validação de campos (Bean Validation).
+* `500 Internal Server Error`: Erro interno não tratado.
+
+## **Padrão Global de Resposta de Erro:**
+Todas as respostas de erro da API seguem a estrutura padronizada:
+```json
+{
+  "error": "STRING_IDENTIFICADORA",
+  "message": "Mensagem compreensível da causa do erro",
+  "details": [
+    "Detalhamento específico do campo ou contexto"
+  ],
+  "timestamp": "2026-03-30T10:00:00Z",
+  "path": "/pedidos",
+  "requestId": "c1f7a2d8-4b2e-4b2a-89a1-7c9d3e5f1a2b"
+}
+```
+
+# **7\. Escopo: MVP Implementado vs. Proposto / Planejado**
+
+## **MVP Implementado (Fluxo A Crítico Completo):**
+* **Fluxo de Atendimento e Pedidos:** `Criação (com canalPedido obrigatório) -> Validação e Baixa de Estoque -> Pagamento Mock (Idempotência e Status) -> Esteira de Cozinha/Entrega -> Auditoria`.
+* **Segurança e RBAC:** Autenticação JWT stateless com controle de acesso por roles (`ADMIN`, `GERENTE`, `ATENDENTE`, `COZINHA`, `CLIENTE`).
+* **LGPD:** Consentimento explícito obrigatório no cadastro, proteção de credenciais com BCrypt e omissão de dados sensíveis nas saídas de DTOs.
+* **Estoque e Catálogo:** Catálogo por unidade e bloqueio transacional (`409 Conflict`) caso falte estoque.
+* **Auditoria:** Gravação de logs estruturados em tabela dedicada (`auditoria_logs`).
+* **Qualidade e Entrega:** Migrations Flyway (`V1` e `V2`), documentação Swagger/OpenAPI e coleção Postman com cobertura de cenários positivos e negativos.
+
+## **Proposto / Planejado (Roadmap de Evolução Futura):**
+* **Gateways Reais:** Integração com adquirentes reais (Cielo, Mercado Pago, Stone) via Webhooks autenticados por mTLS.
+* **Motor Promocional:** Mecanismo complexo de cupons dinâmicos, cashbacks avançados e regras de desconto da matriz.
+* **BI e Analytics:** Dashboards consolidados de faturamento e tempo médio de preparo por unidade.
+* **Comunicação em Tempo Real:** WebSockets/SSE para atualização em tempo real de painéis da cozinha e totens.
 
 **Apresentação do Diagrama de Classe**  
 ![][image2]

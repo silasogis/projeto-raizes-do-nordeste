@@ -1,0 +1,30 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: raizes-nordeste-backend-local
+
+  datasource:
+    url: jdbc:h2:mem:raizes_nordeste_db;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    locations: classpath:db/migration
+
+raizes:
+  jwt:
+    secret: ${JWT_SECRET:raizes_do_nordeste_chave_secreta_jwt_para_ambiente_de_desenvolvimento_2026_segura}
+    expiration-hours: ${JWT_EXPIRATION_HOURS:8}

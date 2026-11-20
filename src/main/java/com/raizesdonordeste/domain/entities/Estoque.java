@@ -39,4 +39,34 @@ public class Estoque {
     @UpdateTimestamp
     @Column(name = "data_atualizacao", nullable = false)
     private LocalDateTime dataAtualizacao;
+
+    public void adicionarEstoque(int quantidade) {
+        if (quantidade <= 0) {
+            throw new IllegalArgumentException("A quantidade a adicionar deve ser maior que zero.");
+        }
+        this.quantidadeDisponivel += quantidade;
+    }
+
+    public void subtrairEstoque(int quantidade) {
+        if (quantidade <= 0) {
+            throw new IllegalArgumentException("A quantidade a subtrair deve ser maior que zero.");
+        }
+        if (this.quantidadeDisponivel < quantidade) {
+            String nomeProduto = (produto != null && produto.getNome() != null) ? produto.getNome() : "ID " + (produto != null ? produto.getId() : "desconhecido");
+            Long idUnidade = (unidade != null) ? unidade.getId() : null;
+            throw new com.raizesdonordeste.domain.exceptions.BusinessConflictException(
+                    "ESTOQUE_INSUFICIENTE",
+                    String.format("Saldo insuficiente em estoque para o produto '%s' na unidade ID %s. Solicitado: %d, Disponível: %d.",
+                            nomeProduto, idUnidade, quantidade, this.quantidadeDisponivel)
+            );
+        }
+        this.quantidadeDisponivel -= quantidade;
+    }
+
+    public void definirEstoque(int novaQuantidade) {
+        if (novaQuantidade < 0) {
+            throw new IllegalArgumentException("A quantidade de estoque não pode ser negativa.");
+        }
+        this.quantidadeDisponivel = novaQuantidade;
+    }
 }

@@ -38,10 +38,14 @@ class AuthControllerIntegrationTest {
     private UsuarioRepository usuarioRepository;
 
     @Autowired
+    private com.raizesdonordeste.infrastructure.repositories.AuditoriaLogRepository auditoriaLogRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
+        auditoriaLogRepository.deleteAll();
         usuarioRepository.deleteAll();
 
         // Usuário Administrador para testes de RBAC

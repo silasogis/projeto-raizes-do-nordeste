@@ -1,11 +1,17 @@
 package com.raizesdonordeste.application.services;
 
+import com.raizesdonordeste.api.dtos.response.AuditoriaLogResponseDto;
+import com.raizesdonordeste.api.dtos.response.PaginatedResponseDto;
 import com.raizesdonordeste.domain.entities.AuditoriaLog;
 import com.raizesdonordeste.domain.entities.Usuario;
 import com.raizesdonordeste.infrastructure.repositories.AuditoriaLogRepository;
 import com.raizesdonordeste.infrastructure.repositories.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -47,5 +53,16 @@ public class AuditoriaService {
 
         auditoriaLogRepository.save(logEntry);
         log.info("Log de auditoria registrado: [Ação: {}, Entidade: {}, ID: {}, Ator: {}]", acao, entidade, entidadeId, ator);
+    }
+
+    @Transactional(readOnly = true)
+    public PaginatedResponseDto<AuditoriaLogResponseDto> listarLogs(String entidade, Long entidadeId, int page, int limit) {
+        log.info("Consultando logs de auditoria. Entidade: {}, EntidadeId: {}, Página: {}, Limite: {}",
+                entidade, entidadeId, page, limit);
+
+        Pageable pageable = PageRequest.of(page, limit, Sort.by("id").descending());
+        Page<AuditoriaLog> pageResult = auditoriaLogRepository.findWithFilters(entidade, entidadeId, pageable);
+
+        return PaginatedResponseDto.fromPage(pageResult, AuditoriaLogResponseDto::fromEntity);
     }
 }

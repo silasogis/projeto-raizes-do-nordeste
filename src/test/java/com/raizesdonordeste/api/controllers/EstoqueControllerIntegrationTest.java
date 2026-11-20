@@ -60,6 +60,12 @@ class EstoqueControllerIntegrationTest {
     @Autowired
     private EstoqueRepository estoqueRepository;
 
+    @Autowired(required = false)
+    private com.raizesdonordeste.infrastructure.repositories.PedidoRepository pedidoRepository;
+
+    @Autowired(required = false)
+    private com.raizesdonordeste.infrastructure.repositories.PagamentoRepository pagamentoRepository;
+
     @Autowired
     private AuditoriaLogRepository auditoriaLogRepository;
 
@@ -75,6 +81,12 @@ class EstoqueControllerIntegrationTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        if (pagamentoRepository != null) {
+            pagamentoRepository.deleteAll();
+        }
+        if (pedidoRepository != null) {
+            pedidoRepository.deleteAll();
+        }
         auditoriaLogRepository.deleteAll();
         estoqueRepository.deleteAll();
         produtoRepository.deleteAll();

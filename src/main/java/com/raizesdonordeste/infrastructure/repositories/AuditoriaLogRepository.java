@@ -4,6 +4,8 @@ import com.raizesdonordeste.domain.entities.AuditoriaLog;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -13,5 +15,15 @@ public interface AuditoriaLogRepository extends JpaRepository<AuditoriaLog, Long
 
     List<AuditoriaLog> findByEntidadeAndEntidadeId(String entidade, Long entidadeId);
 
-    Page<AuditoriaLog> findAll(Pageable pageable);
+    @Query(value = "SELECT a FROM AuditoriaLog a WHERE " +
+                   "(:entidade IS NULL OR a.entidade = :entidade) AND " +
+                   "(:entidadeId IS NULL OR a.entidadeId = :entidadeId)",
+           countQuery = "SELECT COUNT(a) FROM AuditoriaLog a WHERE " +
+                        "(:entidade IS NULL OR a.entidade = :entidade) AND " +
+                        "(:entidadeId IS NULL OR a.entidadeId = :entidadeId)")
+    Page<AuditoriaLog> findWithFilters(
+            @Param("entidade") String entidade,
+            @Param("entidadeId") Long entidadeId,
+            Pageable pageable
+    );
 }

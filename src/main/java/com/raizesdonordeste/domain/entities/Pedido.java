@@ -59,4 +59,26 @@ public class Pedido {
 
     @OneToOne(mappedBy = "pedido", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Pagamento pagamento;
+
+    public void adicionarItem(ItemPedido item) {
+        if (this.itens == null) {
+            this.itens = new ArrayList<>();
+        }
+        this.itens.add(item);
+        item.setPedido(this);
+    }
+
+    public void removerItem(ItemPedido item) {
+        if (this.itens != null) {
+            this.itens.remove(item);
+            item.setPedido(null);
+        }
+    }
+
+    public void associarPagamento(Pagamento pagamento) {
+        this.pagamento = pagamento;
+        if (pagamento != null) {
+            pagamento.setPedido(this);
+        }
+    }
 }

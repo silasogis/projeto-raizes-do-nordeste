@@ -40,11 +40,23 @@ class AuthControllerIntegrationTest {
     @Autowired
     private com.raizesdonordeste.infrastructure.repositories.AuditoriaLogRepository auditoriaLogRepository;
 
+    @Autowired(required = false)
+    private com.raizesdonordeste.infrastructure.repositories.PedidoRepository pedidoRepository;
+
+    @Autowired(required = false)
+    private com.raizesdonordeste.infrastructure.repositories.PagamentoRepository pagamentoRepository;
+
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
+        if (pagamentoRepository != null) {
+            pagamentoRepository.deleteAll();
+        }
+        if (pedidoRepository != null) {
+            pedidoRepository.deleteAll();
+        }
         auditoriaLogRepository.deleteAll();
         usuarioRepository.deleteAll();
 
@@ -223,5 +235,17 @@ class AuthControllerIntegrationTest {
 
         String responseJson = result.getResponse().getContentAsString();
         return objectMapper.readTree(responseJson).get("accessToken").asText();
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        if (pagamentoRepository != null) {
+            pagamentoRepository.deleteAll();
+        }
+        if (pedidoRepository != null) {
+            pedidoRepository.deleteAll();
+        }
+        auditoriaLogRepository.deleteAll();
+        usuarioRepository.deleteAll();
     }
 }

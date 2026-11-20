@@ -53,6 +53,12 @@ class UnidadeControllerIntegrationTest {
     @Autowired
     private EstoqueRepository estoqueRepository;
 
+    @Autowired(required = false)
+    private com.raizesdonordeste.infrastructure.repositories.PedidoRepository pedidoRepository;
+
+    @Autowired(required = false)
+    private com.raizesdonordeste.infrastructure.repositories.PagamentoRepository pagamentoRepository;
+
     @Autowired
     private com.raizesdonordeste.infrastructure.repositories.AuditoriaLogRepository auditoriaLogRepository;
 
@@ -65,6 +71,12 @@ class UnidadeControllerIntegrationTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        if (pagamentoRepository != null) {
+            pagamentoRepository.deleteAll();
+        }
+        if (pedidoRepository != null) {
+            pedidoRepository.deleteAll();
+        }
         auditoriaLogRepository.deleteAll();
         estoqueRepository.deleteAll();
         produtoRepository.deleteAll();

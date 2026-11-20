@@ -70,3 +70,9 @@ target/
 # Database
 *.sqlite3
 *.db
+
+# Documentação e Atividades / PDFs
+PLANO_DESENVOLVIMENTO.md
+Projeto Multidisciplinar - Estudo de Caso rev 0.3_final.pdf
+Roteiro de Atividade Pratica - 2026 - Projeto Back End.pdf
+
